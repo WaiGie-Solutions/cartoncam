@@ -1,5 +1,5 @@
 import { Packer } from "docx";
-import { buildPqfDocument, ctnList, defaultDetail, suggestFilename } from "./docx-gen.js";
+import { buildPqfDocument, ctnList, defaultDetail, suggestFilename, MAX_CTNS, parseQty, calcTotal } from "./docx-gen.js";
 
 const $ = (id) => document.getElementById(id);
 const FIELDS = ["dateOfFeedback","pqfNo","supplierName","invoicePo","dateReceived","containerNo",
@@ -103,31 +103,36 @@ function syncType() {
   const r = state.reportType === "receiving";
   $("typeReceiving").classList.toggle("active", r);
   $("typeFeedback").classList.toggle("active", !r);
+  $("typeReceiving").setAttribute("aria-pressed", r ? "true" : "false");
+  $("typeFeedback").setAttribute("aria-pressed", !r ? "true" : "false");
   $("supplierCard").hidden = !r;
   $("customerCard").hidden = r;
 }
-function syncChips() {
+function syncChips(focusKey) {
   const box = $("writeOffChips"); box.innerHTML = "";
   for (const [k, label] of WRITEOFF) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip" + (state.writeOff === k ? " active" : "");
     b.textContent = `${k} · ${label}`;
-    b.onclick = () => { state.writeOff = k; syncChips(); updateDerived(); };
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", state.writeOff === k ? "true" : "false");
+    b.onclick = () => { state.writeOff = k; syncChips(k); updateDerived(); };
     box.appendChild(b);
+    if (k === focusKey) b.focus();
   }
 }
 function updateDerived() {
-  const q = $("quantity").value.trim();
-  const up = parseFloat($("unitPrice").value);
-  $("totalHint").textContent = (!Number.isNaN(up) && q) ? `Total ≈ S$${(Number(q) * up).toFixed(2)} (auto in Word)` : "";
+  const total = calcTotal($("quantity").value, $("unitPrice").value);
+  $("totalHint").textContent = total ? `Total ≈ S$${total} (auto in Word)` : "";
   $("photoCount").textContent = photos.length ? `(${photos.length})` : "";
   renderPreview();
 }
-function esc(s) { return String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 /* ---------- preview ---------- */
 let previewT = 0;
+const IMG_OK = /^data:image\/(jpeg|png);base64,/;
 function renderPreview() {
   clearTimeout(previewT);
   previewT = setTimeout(() => {
@@ -146,7 +151,15 @@ function renderPreview() {
       <p>${esc(d.detail)}</p>
       <h3>Supporting Attachments — CTN 1…${ctns.length} (${ctns.length} cartons)</h3>
       <p style="color:#64748b">${esc(ctns.slice(0, 24).join("   "))}${ctns.length > 24 ? " …" : ""}</p>
-      <div class="phs">${photos.map((p) => `<div><img src="${p.dataUrl}" alt=""/><br/><small>${esc(p.caption || "")}</small></div>`).join("") || "<small>No photos yet</small>"}</div>`;
+      ${(() => {
+        let bad = 0;
+        const phHtml = photos.map((p, idx) => {
+          const alt = esc(`Damage photo ${idx + 1}` + (p.caption ? ` - ${p.caption}` : ""));
+          if (!IMG_OK.test(p.dataUrl || "")) { bad++; return `<div><small>(photo unavailable)</small><br/><small>${esc(p.caption || "")}</small></div>`; }
+          return `<div><img src="${p.dataUrl}" alt="${alt}"/><br/><small>${esc(p.caption || "")}</small></div>`;
+        }).join("");
+        return `<div class="phs">${phHtml || "<small>No photos yet</small>"}</div>${bad ? `<p style="color:#b45309">${bad} photo(s) unavailable in preview</p>` : ""}`;
+      })()}`;
   }, 200);
 }
 
@@ -170,21 +183,23 @@ function compressImage(file) {
 }
 async function addFiles(list) {
   $("status").textContent = "Compressing photos…";
+  let skipped = 0;
   for (const f of list) {
     try {
-      if (!f.type.startsWith("image/")) continue;
+      if (!f.type.startsWith("image/")) { skipped++; continue; }
       const c = await compressImage(f);
       photos.push({ ...c, caption: "" });
-    } catch { /* skip unreadable */ }
+    } catch { skipped++; /* skip unreadable */ }
   }
-  $("status").textContent = "";
+  $("status").textContent = skipped ? `${skipped} file(s) skipped (not readable images)` : "";
   renderPhotos(); updateDerived();
 }
 function renderPhotos() {
   const g = $("photoGrid"); g.innerHTML = "";
   photos.forEach((ph, i) => {
     const div = document.createElement("div"); div.className = "ph";
-    div.innerHTML = `<img alt="damage ${i+1}"/><input placeholder="Caption (optional)" value="${esc(ph.caption)}"/><button class="rm" type="button">Remove</button>`;
+    const alt = `Damage photo ${i + 1}` + (ph.caption ? ` - ${ph.caption}` : "");
+    div.innerHTML = `<img alt="${esc(alt)}"/><input placeholder="Caption (optional)" value="${esc(ph.caption)}"/><button class="rm" type="button">Remove</button>`;
     div.querySelector("img").src = ph.dataUrl;
     div.querySelector("input").oninput = (e) => { ph.caption = e.target.value; updateDerived(); };
     div.querySelector(".rm").onclick = () => { photos.splice(i, 1); renderPhotos(); updateDerived(); };
@@ -215,15 +230,22 @@ function suggestNextPqfNo() {
 async function download() {
   const d = readForm();
   if (!d.pqfNo) { $("status").textContent = "Enter a PQF No. first."; $("pqfNo").focus(); return; }
-  if (!d.quantity) { $("status").textContent = "Enter Quantity first (drives CTN list)."; $("quantity").focus(); return; }
+  if (!parseQty(d.quantity)) { $("status").textContent = "Enter Quantity first (drives CTN list)."; $("quantity").focus(); return; }
   $("status").textContent = "Building .docx…";
   try {
-    const phs = photos.map((p) => ({ bytes: dataUrlToBytes(p.dataUrl), kind: "jpg", width: p.width, height: p.height, caption: p.caption }));
+    const phs = [];
+    let badPhotos = 0;
+    for (const p of photos) {
+      try {
+        phs.push({ bytes: dataUrlToBytes(p.dataUrl), kind: "jpg", width: p.width, height: p.height, caption: p.caption });
+      } catch { badPhotos++; /* skip unreadable photo */ }
+    }
     const doc = buildPqfDocument(d, phs);
     const blob = await Packer.toBlob(doc);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = (d.filename || suggestFilename(d)) + ".docx";
+    const safeBase = String(d.filename || suggestFilename(readForm())).replace(/[\\/:*?"<>|#%{}$!'@`~+=,;]+/g, "").replace(/\s+/g, " ").trim().slice(0, 120) || "PQF-DRAFT";
+    a.download = safeBase + ".docx";
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     const libs = getLibs();
@@ -231,10 +253,14 @@ async function download() {
     if (d.productCode) pushLib(libs.products, `${d.productCode} — ${d.productDesc}`);
     libs.pqfNos = libs.pqfNos || []; pushLib(libs.pqfNos, d.pqfNo);
     setLibs(libs); fillLibraries();
-    $("status").textContent = `Done — ${phs.length} photo(s), CTN 1…${ctnList(d.quantity).length}.`;
+    const capped = parseQty(d.quantity) === MAX_CTNS && Number(String(d.quantity).trim()) > MAX_CTNS;
+    let msg = `Done — ${phs.length} photo(s), CTN 1…${ctnList(d.quantity).length}.`;
+    if (badPhotos) msg += ` (${badPhotos} photo(s) skipped as unreadable)`;
+    if (capped) msg += ` Quantity capped at ${MAX_CTNS} — split into two reports if more.`;
+    $("status").textContent = msg;
   } catch (e) {
     console.error(e);
-    $("status").textContent = "Build failed (network needed once for the Word library). Reconnect and retry.";
+    $("status").textContent = "Build failed. Reload the page and retry.";
   }
 }
 
@@ -279,14 +305,19 @@ function init() {
   $("downloadBtn").onclick = download;
   $("printBtn").onclick = () => window.print();
   $("saveRecent").onclick = async () => {
-    const d = readForm();
-    await idbPut({ id: Date.now(), data: d, photos });
-    await refreshRecents();
-    $("status").textContent = "Saved on this device.";
+    try {
+      const d = readForm();
+      await idbPut({ id: Date.now(), data: d, photos });
+      await refreshRecents();
+      $("status").textContent = "Saved on this device.";
+    } catch {
+      $("status").textContent = "Couldn't save on this device (private browsing?) — download the .docx to keep a copy.";
+    }
   };
   $("clearAll").onclick = async () => {
     if (!confirm("Clear saved reports + dropdown memory on this device?")) return;
-    localStorage.removeItem(LS_LIBS); await idbClear();
+    localStorage.removeItem(LS_LIBS);
+    try { await idbClear(); } catch { $("status").textContent = "Saved photos couldn't be cleared (browser storage unavailable)."; return; }
     fillLibraries(); await refreshRecents();
   };
   let deferred = null;

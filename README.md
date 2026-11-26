@@ -16,8 +16,7 @@ no server upload.
 
 ## Develop
 
-Static site — no build step. The only dependency is `docx` loaded from CDN
-in the browser via `importmap` (see `index.html`).
+Static site — no build step. The only dependency is `docx` (v9.16.0) vendored at `vendor/docx.mjs` in the browser via `importmap` (see `index.html`) and cached by the service worker for offline export.
 
 ```bash
 npm install   # only for local node verification of the generator

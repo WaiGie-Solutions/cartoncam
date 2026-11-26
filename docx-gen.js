@@ -17,6 +17,8 @@ const FULL = 9026; // usable DXA with ~1in margins
 const FONT = "Arial";
 const FS = (n) => n * 2; // pt -> half-points
 
+export const MAX_CTNS = 500;
+
 function tr(text, opts = {}) {
   return new TextRun({
     text: String(text ?? ""),
@@ -85,8 +87,10 @@ const WRITEOFF = [
   ["G", "Vendor Return"],
 ];
 
+export function parseQty(v) { const n = parseInt(v, 10); return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_CTNS) : 0; }
+export function calcTotal(qty, unitPrice) { if (unitPrice === "" || unitPrice == null) return ""; const q = typeof qty === "number" ? qty : parseQty(qty); const p = Number(unitPrice); return q && Number.isFinite(p) ? (q * p).toFixed(2) : ""; }
 export function ctnList(quantity) {
-  const n = Math.max(0, parseInt(quantity, 10) || 0);
+  const n = parseQty(quantity);
   const out = [];
   for (let i = 1; i <= n; i++) out.push(`CTN ${i}`);
   return out;
@@ -105,10 +109,7 @@ export function suggestFilename(data) {
 /** data: flat form object. photos: [{bytes:Uint8Array, kind, width, height, caption}] */
 export function buildPqfDocument(data, photos = []) {
   const d = data;
-  const total =
-    d.unitPrice !== "" && d.unitPrice != null && !Number.isNaN(Number(d.unitPrice))
-      ? (Number(d.quantity || 0) * Number(d.unitPrice)).toFixed(2)
-      : "";
+  const total = calcTotal(d.quantity, d.unitPrice);
 
   const header = new Header({
     children: [
@@ -140,7 +141,7 @@ export function buildPqfDocument(data, photos = []) {
       simpleTable([1500, 3013, 1500, 3013], [
         [cell("Name of Supplier", { w: 1500, bold: true, size: 9, shade: "EAEFF7" }), cell(d.supplierName, { w: 3013, size: 9 }), cell("", { w: 1500 }), cell("", { w: 3013 })],
         [...labelCell("Invoice/DO/PO No.", d.invoicePo, 1500, 3013), ...labelCell("Date Received", d.dateReceived, 1500, 3013)],
-        [...labelCell("Container No.", d.containerNo, 1500, 3013), cell(d.containerNo2 || d.containerNo, { w: 1500, size: 9 }), cell(d.containerNo3 || d.containerNo, { w: 3013, size: 9 })],
+        [...labelCell("Container No.", d.containerNo, 1500, 3013), cell(d.containerNo2 || d.containerNo, { w: 1500, size: 9 }), cell(d.containerNo3 || d.containerNo, { w: 3013, size: 9 })], // 3-cell row mirrors the reference doc which repeats the single container number (Q1 replica); loaded records may carry split values.
       ])
     );
   }
