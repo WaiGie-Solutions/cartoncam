@@ -19,7 +19,9 @@ const FS = (n) => n * 2; // pt -> half-points
 
 export const MAX_CTNS = 500;
 
-function tr(text, opts = {}) {
+export function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+export function tr(text, opts = {}) {
   return new TextRun({
     text: String(text ?? ""),
     font: FONT,
@@ -29,7 +31,7 @@ function tr(text, opts = {}) {
   });
 }
 
-function p(text, opts = {}) {
+export function p(text, opts = {}) {
   if (Array.isArray(text)) return new Paragraph({ children: text, alignment: opts.align, spacing: { after: 40 } });
   return new Paragraph({
     children: [tr(text, opts)],
@@ -38,7 +40,7 @@ function p(text, opts = {}) {
   });
 }
 
-function heading(title) {
+export function heading(title) {
   return new Paragraph({
     children: [tr(title, { bold: true, size: 11 })],
     shading: { type: ShadingType.CLEAR, fill: "D9E2F3" },
@@ -46,7 +48,7 @@ function heading(title) {
   });
 }
 
-function cell(text, { w, bold, size, shade, align } = {}) {
+export function cell(text, { w, bold, size, shade, align } = {}) {
   return new TableCell({
     width: { size: w ?? 1000, type: WidthType.DXA },
     shading: shade ? { type: ShadingType.CLEAR, fill: shade } : undefined,
@@ -54,15 +56,15 @@ function cell(text, { w, bold, size, shade, align } = {}) {
   });
 }
 
-function checkCell(checked) {
+export function checkCell(checked) {
   return cell(checked ? "√" : "", { w: 400, align: AlignmentType.CENTER, bold: true, size: 12 });
 }
 
-function labelCell(label, value, wLabel = 1600, wValue = 2900) {
+export function labelCell(label, value, wLabel = 1600, wValue = 2900) {
   return [cell(label, { w: wLabel, bold: true, size: 9, shade: "EAEFF7" }), cell(value, { w: wValue, size: 9 })];
 }
 
-function simpleTable(columnWidths, rows) {
+export function simpleTable(columnWidths, rows) {
   return new Table({
     columnWidths,
     width: { size: FULL, type: WidthType.DXA },
@@ -87,7 +89,7 @@ const WRITEOFF = [
   ["G", "Vendor Return"],
 ];
 
-export function parseQty(v) { const n = parseInt(v, 10); return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_CTNS) : 0; }
+export function parseQty(v) { const n = Number.parseInt(v, 10); return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_CTNS) : 0; }
 export function calcTotal(qty, unitPrice) { if (unitPrice === "" || unitPrice == null) return ""; const q = typeof qty === "number" ? qty : parseQty(qty); const p = Number(unitPrice); return q && Number.isFinite(p) ? (q * p).toFixed(2) : ""; }
 export function ctnList(quantity) {
   const n = parseQty(quantity);

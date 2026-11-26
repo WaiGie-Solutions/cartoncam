@@ -1,5 +1,5 @@
 import { Packer } from "docx";
-import { buildPqfDocument, ctnList, defaultDetail, suggestFilename, MAX_CTNS, parseQty, calcTotal } from "./docx-gen.js";
+import { buildPqfDocument, ctnList, defaultDetail, escapeHtml as esc, suggestFilename, MAX_CTNS, parseQty, calcTotal } from "./docx-gen.js";
 
 const $ = (id) => document.getElementById(id);
 const FIELDS = ["dateOfFeedback","pqfNo","supplierName","invoicePo","dateReceived","containerNo",
@@ -33,8 +33,12 @@ let photos = []; // {dataUrl, width, height, caption}
 /* ---------- storage ---------- */
 const LS_LIBS = "pqf.libs.v1";
 function getLibs() {
-  try { return JSON.parse(localStorage.getItem(LS_LIBS)) || { suppliers: [], products: [], pos: [], containers: [] }; }
-  catch { return { suppliers: [], products: [], pos: [], containers: [] }; }
+  const empty = { suppliers: [], products: [], pos: [], containers: [] };
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_LIBS)) || {};
+    for (const k of Object.keys(empty)) if (!Array.isArray(raw[k])) raw[k] = [];
+    return { ...empty, ...raw };
+  } catch { return { suppliers: [], products: [], pos: [], containers: [] }; }
 }
 function setLibs(l) { localStorage.setItem(LS_LIBS, JSON.stringify(l)); }
 function pushLib(arr, v) {
@@ -128,8 +132,6 @@ function updateDerived() {
   $("photoCount").textContent = photos.length ? `(${photos.length})` : "";
   renderPreview();
 }
-function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-
 /* ---------- preview ---------- */
 let previewT = 0;
 const IMG_OK = /^data:image\/(jpeg|png);base64,/;
@@ -215,16 +217,21 @@ function dataUrlToBytes(dataUrl) {
 }
 
 /* ---------- actions ---------- */
+function incrementSuffix(s) {
+  let end = s.length;
+  while (end > 0 && (s[end - 1] < "0" || s[end - 1] > "9")) end--;
+  let start = end;
+  while (start > 0 && s[start - 1] >= "0" && s[start - 1] <= "9") start--;
+  if (start === end) return `${s}-2`;
+  const n = s.slice(start, end);
+  return s.slice(0, start) + String(Number(n) + 1).padStart(n.length, "0");
+}
+
 function suggestNextPqfNo() {
   const libs = getLibs();
   const all = libs.pqfNos || [];
   const last = $("pqfNo").value.trim() || all[0] || EXAMPLE.pqfNo;
-  const m = last.match(/(\d+)\D*$/);
-  if (m) {
-    const n = m[1]; const inc = String(Number(n) + 1).padStart(n.length, "0");
-    return last.slice(0, last.length - n.length) + inc;
-  }
-  return last + "-2";
+  return incrementSuffix(last);
 }
 
 async function download() {
@@ -267,8 +274,8 @@ async function download() {
 function fillLibraries() {
   const libs = getLibs();
   const fill = (id, arr) => { $(id).innerHTML = arr.map((v) => `<option value="${esc(v)}">`).join(""); };
-  fill("dlSuppliers", libs.suppliers || []); fill("dlPos", libs.pos || []);
-  fill("dlContainers", libs.containers || []); fill("dlProducts", libs.products || []);
+  fill("dlSuppliers", libs.suppliers); fill("dlPos", libs.pos);
+  fill("dlContainers", libs.containers); fill("dlProducts", libs.products);
 }
 
 async function refreshRecents() {
@@ -281,8 +288,10 @@ async function refreshRecents() {
       b.className = "ghost";
       b.textContent = `${new Date(r.id).toLocaleDateString()} · PQF ${r.data.pqfNo || "DRAFT"} · ${r.data.productDesc?.slice(0, 40) || ""} (${(r.photos || []).length} photos)`;
       b.onclick = async () => {
-        const full = await idbGet(r.id);
-        if (full) { writeForm(full.data); photos = full.photos || []; renderPhotos(); updateDerived(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+        try {
+          const full = await idbGet(r.id);
+          if (full) { writeForm(full.data); photos = full.photos || []; renderPhotos(); updateDerived(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+        } catch { $("status").textContent = "Couldn't open that saved report."; }
       };
       box.appendChild(b);
     }
@@ -322,8 +331,8 @@ function init() {
   };
   let deferred = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; $("installBtn").hidden = false; });
-  $("installBtn").onclick = () => deferred?.prompt();
+  $("installBtn").onclick = () => { if (deferred) Promise.resolve(deferred.prompt()).catch(() => {}); };
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
-  refreshRecents(); renderPhotos(); updateDerived();
+  void refreshRecents(); renderPhotos(); updateDerived();
 }
 init();

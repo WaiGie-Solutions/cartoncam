@@ -19,9 +19,21 @@ no server upload.
 Static site — no build step. The only dependency is `docx` (v9.16.0) vendored at `vendor/docx.mjs` in the browser via `importmap` (see `index.html`) and cached by the service worker for offline export.
 
 ```bash
-npm install   # only for local node verification of the generator
-npm test      # generates sample-pqf.docx from the chicken example
+npm install   # dev-only: jsdom + adm-zip for the test suite (docx ships in node_modules too)
+npm test      # 38 node:test cases, enforced 100% lines/branches/functions on app.js, docx-gen.js, sw.js
 ```
+
+## Quality gates (all green, no suppressions)
+
+- `npm test` — 38 `node:test` cases with enforced thresholds: 100% lines,
+  100% branches, 100% functions on `app.js`, `docx-gen.js`, `sw.js`.
+- Semgrep (containers): `auto + javascript + security-audit + secrets +
+  owasp-top-ten` — 0 findings.
+- SonarQube Community (local podman): 0 open issues, 0 hotspots, Quality
+  Gate OK (new coverage 100%, 0 violations, 0 duplication). Feed it LCOV via
+  `sonar.javascript.lcov.reportPaths=coverage/lcov.info`
+  (see `sonar-project.properties`).
+- Gitleaks (container): no leaks. `npm audit`: 0 vulnerabilities.
 
 ## Deploy to GitHub Pages (private repo, public unlisted URL)
 
@@ -39,6 +51,7 @@ npm test      # generates sample-pqf.docx from the chicken example
 - `index.html` — form + preview + recents
 - `styles.css` — mobile-first styles + print CSS for PDF
 - `app.js` — state, storage, photo compression, preview
-- `docx-gen.js` — shared `buildPqfDocument(data)` used by browser + node test
-- `test-generate.mjs` — node smoke test (`npm test`)
+- `docx-gen.js` — shared pure document builder (`escapeHtml`, `parseQty`, `calcTotal`, `ctnList`, `buildPqfDocument`), imported by `app.js`
+- `test/` — node:test suite (jsdom harness in `helpers.mjs`); 100% line/branch/function coverage enforced by `npm test`
+- `vendor/docx.mjs` — vendored Word library (no CDN at runtime)
 - `manifest.webmanifest`, `sw.js` — installable PWA, offline app shell
