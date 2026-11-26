@@ -1,6 +1,6 @@
 {
-  "name": "PQF Damage Reporter",
-  "short_name": "PQF",
+  "name": "CartonCam — PQF Damage Reporter",
+  "short_name": "CartonCam",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f1f5f9",
