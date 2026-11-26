@@ -54,6 +54,24 @@ describe("photos pipeline and download", () => {
     assert.match(document.getElementById("preview").innerHTML, /unavailable in preview/);
   });
 
+  it("auto-numbers captions CTN 1, 2, 3 and continues past edits", async () => {
+    while (document.querySelector("#photoGrid .rm")) document.querySelector("#photoGrid .rm").click();
+    assert.equal(document.querySelectorAll("#photoGrid .ph").length, 0);
+    attachFiles("fileInput", [fileNamed("a.jpg", "image/jpeg"), fileNamed("b.jpg", "image/jpeg")]);
+    await sleep(200);
+    let captions = [...document.querySelectorAll("#photoGrid .ph input")].map((i) => i.value);
+    assert.deepEqual(captions, ["CTN 1", "CTN 2"]);
+    const inputs = [...document.querySelectorAll("#photoGrid .ph input")];
+    inputs[0].value = "Top crushed";
+    inputs[0].dispatchEvent(new window.Event("input", { bubbles: true }));
+    inputs[1].value = "";
+    inputs[1].dispatchEvent(new window.Event("input", { bubbles: true }));
+    attachFiles("fileInput", [fileNamed("c.jpg", "image/jpeg")]);
+    await sleep(200);
+    captions = [...document.querySelectorAll("#photoGrid .ph input")].map((i) => i.value);
+    assert.deepEqual(captions, ["Top crushed", "", "CTN 3"]);
+  });
+
   it("blocks download without pqf no or quantity", async () => {
     setField("pqfNo", "");
     click("downloadBtn");

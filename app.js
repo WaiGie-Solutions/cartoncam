@@ -166,6 +166,14 @@ function renderPreview() {
 }
 
 /* ---------- photos ---------- */
+function nextCtnNumber() {
+  let max = photos.length;
+  for (const ph of photos) {
+    const m = /CTN\s*(\d+)/i.exec(ph.caption || "");
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return max + 1;
+}
 function compressImage(file) {
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file);
@@ -186,11 +194,12 @@ function compressImage(file) {
 async function addFiles(list) {
   $("status").textContent = "Compressing photos…";
   let skipped = 0;
+  let n = nextCtnNumber();
   for (const f of list) {
     try {
       if (!f.type.startsWith("image/")) { skipped++; continue; }
       const c = await compressImage(f);
-      photos.push({ ...c, caption: "" });
+      photos.push({ ...c, caption: `CTN ${n++}` });
     } catch { skipped++; /* skip unreadable */ }
   }
   $("status").textContent = skipped ? `${skipped} file(s) skipped (not readable images)` : "";
