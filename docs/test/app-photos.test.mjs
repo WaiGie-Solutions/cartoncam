@@ -85,7 +85,11 @@ describe("photos pipeline and download", () => {
     setField("quantity", "2");
   });
 
-  it("downloads with defaults, fallback filename, library memory", async () => {
+  it("downloads with explicit values, fallback filename, library memory", async () => {
+    setField("pqfNo", "ST-1");
+    setField("quantity", "2");
+    setField("invoicePo", "PO00066312");
+    setField("productCode", "ST-C230001391");
     setField("filename", "");
     setField("unitPrice", "5");
     click("downloadBtn");

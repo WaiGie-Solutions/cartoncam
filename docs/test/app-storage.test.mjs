@@ -14,6 +14,9 @@ describe("storage, recents, libraries, clear", () => {
     await sleep(120);
     assert.match(document.getElementById("recentList").innerHTML, /Nothing saved yet/);
     localStorage.setItem("pqf.libs.v1", "{bad json");
+    setField("pqfNo", "ST-1");
+    setField("quantity", "2");
+    setField("invoicePo", "PO9");
     setField("filename", "t");
     click("downloadBtn");
     await sleep(900);

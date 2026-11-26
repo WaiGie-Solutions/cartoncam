@@ -88,10 +88,6 @@ async function idbClear() {
 }
 
 /* ---------- form ---------- */
-function todayStr() {
-  const t = new Date();
-  return `${String(t.getDate()).padStart(2,"0")}/${String(t.getMonth()+1).padStart(2,"0")}/${t.getFullYear()}`;
-}
 function readForm() {
   const d = { reportType: state.reportType, writeOff: state.writeOff };
   for (const f of FIELDS) d[f] = $(f).value.trim();
@@ -294,7 +290,7 @@ async function refreshRecents() {
     box.innerHTML = all.length ? "" : `<p class="hint">Nothing saved yet — fill a report and tap Save current.</p>`;
     for (const r of all) {
       const b = document.createElement("button");
-      b.className = "ghost";
+      b.className = "outline";
       b.textContent = `${new Date(r.id).toLocaleDateString()} · PQF ${r.data.pqfNo || "DRAFT"} · ${r.data.productDesc?.slice(0, 40) || ""} (${(r.photos || []).length} photos)`;
       b.onclick = async () => {
         try {
@@ -309,7 +305,7 @@ async function refreshRecents() {
 
 /* ---------- init ---------- */
 function init() {
-  writeForm({ ...EXAMPLE, dateOfFeedback: todayStr(), dateReceived: todayStr(), filename: suggestFilename(EXAMPLE) });
+  writeForm({ reportType: "receiving", writeOff: "B" });
   fillLibraries();
   $("typeReceiving").onclick = () => { state.reportType = "receiving"; syncType(); renderPreview(); };
   $("typeFeedback").onclick = () => { state.reportType = "feedback"; syncType(); renderPreview(); };

@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>CartonCam — PQF Damage Reporter</title>
 <link rel="manifest" href="./manifest.webmanifest" />
 <meta name="theme-color" content="#1a56db" />
+<link rel="stylesheet" href="./vendor/pico.classless.min.css" />
 <link rel="stylesheet" href="./styles.css" />
 <script type="importmap">
 { "imports": { "docx": "./vendor/docx.mjs" } }
@@ -17,7 +18,7 @@
     <h1>📷 CartonCam</h1>
     <p class="sub">PQF damage reports in minutes · CKL-P-089-(F01)-00 · no login · stays on this device</p>
   </div>
-  <button id="installBtn" class="ghost" hidden>Install</button>
+  <button id="installBtn" class="outline" hidden>Install</button>
 </header>
 
 <main>
@@ -30,47 +31,47 @@
     <section class="card">
       <h2>Report</h2>
       <div class="grid">
-        <label>Date of Feedback<input id="dateOfFeedback" type="text" inputmode="numeric" placeholder="25/11/2026" /></label>
+        <label>Date of Feedback<input id="dateOfFeedback" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" /></label>
         <label>PQF No.<input id="pqfNo" type="text" placeholder="ST-31426" /></label>
       </div>
       <div class="row-btns">
-        <button type="button" id="suggestPqf" class="ghost">Suggest next No.</button>
-        <button type="button" id="loadExample" class="ghost">Load chicken example</button>
+        <button type="button" id="suggestPqf" class="outline">Suggest next No.</button>
+        <button type="button" id="loadExample" class="outline">Load chicken example</button>
       </div>
     </section>
 
     <section class="card" id="supplierCard">
       <h2>Supplier <span class="hint">(Receiving Damaged)</span></h2>
-      <label>Name of Supplier<input id="supplierName" list="dlSuppliers" type="text" /></label>
+      <label>Name of Supplier<input id="supplierName" list="dlSuppliers" type="text" placeholder="e.g. Fadel Foods" /></label>
       <div class="grid">
-        <label>Invoice / DO / PO No.<input id="invoicePo" list="dlPos" type="text" /></label>
-        <label>Date Received<input id="dateReceived" type="text" inputmode="numeric" placeholder="25/11/2026" /></label>
+        <label>Invoice / DO / PO No.<input id="invoicePo" list="dlPos" type="text" placeholder="PO00066312" /></label>
+        <label>Date Received<input id="dateReceived" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" /></label>
       </div>
-      <label>Container No.<input id="containerNo" list="dlContainers" type="text" autocapitalize="characters" /></label>
+      <label>Container No.<input id="containerNo" list="dlContainers" type="text" autocapitalize="characters" placeholder="PCIU6163160" /></label>
     </section>
 
     <section class="card" id="customerCard" hidden>
       <h2>Customer <span class="hint">(Customer Feedback)</span></h2>
       <div class="grid">
-        <label>Company Name<input id="companyName" type="text" /></label>
-        <label>Outlet<input id="outlet" type="text" /></label>
-        <label>Customer Name<input id="customerName" type="text" /></label>
-        <label>Delivery Order / Date<input id="doDate" type="text" /></label>
-        <label>Email Address<input id="email" type="email" /></label>
-        <label>Contact Number<input id="contact" type="tel" /></label>
+        <label>Company Name<input id="companyName" type="text" placeholder="e.g. FairPrice" /></label>
+        <label>Outlet<input id="outlet" type="text" placeholder="e.g. Jurong" /></label>
+        <label>Customer Name<input id="customerName" type="text" placeholder="Full name" /></label>
+        <label>Delivery Order / Date<input id="doDate" type="text" placeholder="DO + date" /></label>
+        <label>Email Address<input id="email" type="email" placeholder="name@example.com" /></label>
+        <label>Contact Number<input id="contact" type="tel" placeholder="8-digit number" /></label>
       </div>
     </section>
 
     <section class="card">
       <h2>Product</h2>
       <div class="grid">
-        <label>Product Code<input id="productCode" list="dlProducts" type="text" /></label>
-        <label>UOM<input id="uom" type="text" value="CS" /></label>
+        <label>Product Code<input id="productCode" list="dlProducts" type="text" placeholder="ST-C230001391" /></label>
+        <label>UOM<input id="uom" type="text" placeholder="CS" /></label>
       </div>
-      <label>Product Description<input id="productDesc" type="text" /></label>
+      <label>Product Description<input id="productDesc" type="text" placeholder="CHICKEN 3JW 15KG BULK LP FADEL 0091" /></label>
       <div class="grid3">
-        <label>Expiry Date<input id="expiry" type="text" inputmode="numeric" placeholder="1/4/2028" /></label>
-        <label>Quantity<input id="quantity" type="number" min="0" step="1" inputmode="numeric" placeholder="334" /></label>
+        <label>Expiry Date<input id="expiry" type="text" inputmode="numeric" placeholder="D/M/YYYY" /></label>
+        <label>Quantity<input id="quantity" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 334" /></label>
         <label>Unit Price (S$)<input id="unitPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" /></label>
       </div>
       <p class="hint" id="totalHint"></p>
@@ -83,11 +84,11 @@
 
     <section class="card">
       <h2>Detail + cause</h2>
-      <label>Detail of Feedback<textarea id="detail" rows="3"></textarea></label>
-      <div class="row-btns"><button type="button" id="autoDetail" class="ghost">Auto-fill detail from qty</button></div>
-      <label>Root Cause Analysis<textarea id="rootCause" rows="2"></textarea></label>
-      <label>Corrections<textarea id="corrections" rows="2"></textarea></label>
-      <label>Corrective Actions<textarea id="corrective" rows="2"></textarea></label>
+      <label>Detail of Feedback<textarea id="detail" rows="3" placeholder="Finding during unloading, ___ cartons found damaged"></textarea></label>
+      <div class="row-btns"><button type="button" id="autoDetail" class="outline">Auto-fill detail from qty</button></div>
+      <label>Root Cause Analysis<textarea id="rootCause" rows="2" placeholder="e.g. Non-conformance originated from supplier / shipper"></textarea></label>
+      <label>Corrections<textarea id="corrections" rows="2" placeholder="e.g. Isolated in holding area pending instruction"></textarea></label>
+      <label>Corrective Actions<textarea id="corrective" rows="2" placeholder="e.g. Feedback to CS to inform customer"></textarea></label>
     </section>
 
     <section class="card">
@@ -103,15 +104,15 @@
 
     <section class="card">
       <h2>File</h2>
-      <label>Filename<input id="filename" type="text" /></label>
+      <label>Filename<input id="filename" type="text" placeholder="Auto from PQF No. + product" /></label>
       <div class="row-btns">
-        <button type="button" id="autoFilename" class="ghost">Auto filename</button>
+        <button type="button" id="autoFilename" class="outline">Auto filename</button>
       </div>
     </section>
   </form>
 
   <section class="card sticky-actions">
-    <button id="downloadBtn" class="primary">⬇ Download .docx</button>
+    <button id="downloadBtn">⬇ Download .docx</button>
     <button id="printBtn" class="secondary">🖨 Print / PDF</button>
     <p class="hint" id="status" aria-live="polite"></p>
   </section>
@@ -125,8 +126,8 @@
     <h2>Recent on this device</h2>
     <div id="recentList" class="recent"></div>
     <div class="row-btns">
-      <button id="saveRecent" class="ghost" type="button">💾 Save current</button>
-      <button id="clearAll" class="danger ghost" type="button">Clear saved data</button>
+      <button id="saveRecent" class="outline" type="button">💾 Save current</button>
+      <button id="clearAll" class="outline danger" type="button">Clear saved data</button>
     </div>
   </section>
 </main>

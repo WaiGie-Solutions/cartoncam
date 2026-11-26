@@ -9,8 +9,14 @@ describe("form, toggles, chips, preview, libraries", () => {
     await sleep(50);
   });
 
-  it("seeds the chicken example with Receiving active", () => {
+  it("starts blank with placeholder hints; example loads on demand", () => {
+    assert.equal(document.getElementById("pqfNo").value, "");
+    assert.equal(document.getElementById("quantity").value, "");
+    assert.equal(document.getElementById("productCode").getAttribute("placeholder"), "ST-C230001391");
+    assert.equal(document.getElementById("dateOfFeedback").getAttribute("placeholder"), "DD/MM/YYYY");
+    click("loadExample");
     assert.equal(document.getElementById("pqfNo").value, "ST-31426");
+    assert.equal(document.getElementById("productCode").value, "ST-C230001391");
     assert.equal(document.getElementById("typeReceiving").getAttribute("aria-pressed"), "true");
     assert.equal(document.getElementById("supplierCard").hidden, false);
     assert.equal(document.getElementById("customerCard").hidden, true);
