@@ -1,5 +1,3 @@
+*.docx
 node_modules/
-sample-pqf.docx
-PQF ST-31426 CHICKEN 3JW 15KG BULK LP FADEL 0091.docx
-.DS_Store
 coverage/
