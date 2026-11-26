@@ -145,3 +145,21 @@ export function attachFiles(inputId, files) {
   Object.defineProperty(input, "files", { value: files, configurable: true });
   input.dispatchEvent(new window.Event("change", { bubbles: true }));
 }
+
+export function dropFiles(files) {
+  const dz = document.getElementById("dropzone");
+  const ev = new window.Event("drop", { bubbles: true, cancelable: true });
+  ev.dataTransfer = { files };
+  dz.dispatchEvent(ev);
+}
+
+export function dropEmpty() {
+  const dz = document.getElementById("dropzone");
+  dz.dispatchEvent(new window.Event("drop", { bubbles: true, cancelable: true }));
+}
+
+export function pasteFiles(files) {
+  const ev = new window.Event("paste", { bubbles: true, cancelable: true });
+  if (files) ev.clipboardData = { files };
+  document.getElementById("f").dispatchEvent(ev);
+}

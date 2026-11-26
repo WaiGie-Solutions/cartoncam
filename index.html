@@ -92,11 +92,12 @@
 
     <section class="card">
       <h2>Photos <span class="hint" id="photoCount"></span></h2>
-      <p class="hint">Compressed on-device (~1600px). Add captions if needed. 2-per-row in Word.</p>
-      <div class="row-btns">
-        <label class="btn">📷 Take photo<input id="camInput" type="file" accept="image/*" capture="environment" hidden /></label>
-        <label class="btn secondary">🖼 Add images<input id="fileInput" type="file" accept="image/*" multiple hidden /></label>
+      <p class="hint">Tap to take a photo or pick images, drag &amp; drop files here, or paste. Compressed on-device (~1600px). Add captions if needed. 2-per-row in Word.</p>
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Add photos: tap to browse or take a photo, or drag and drop image files here">
+        <span class="dz-icon">📷</span>
+        <span><b>Tap to add photos</b><br />or drag &amp; drop / paste them here</span>
       </div>
+      <input id="fileInput" type="file" accept="image/*" multiple hidden aria-label="Add photos" />
       <div id="photoGrid" class="photo-grid"></div>
     </section>
 

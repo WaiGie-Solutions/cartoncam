@@ -1,6 +1,6 @@
 import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
-import { setupDom, sleep, setField, click, attachFiles, fileNamed } from "./helpers.mjs";
+import { setupDom, sleep, setField, click, attachFiles, fileNamed, dropFiles, dropEmpty, pasteFiles } from "./helpers.mjs";
 
 describe("form, toggles, chips, preview, libraries", () => {
   before(async () => {
@@ -89,9 +89,33 @@ describe("form, toggles, chips, preview, libraries", () => {
     assert.equal(globalThis.__printed, 1);
   });
 
-  it("camera input feeds the photo pipeline", async () => {
-    attachFiles("camInput", [fileNamed("c.jpg", "image/jpeg")]);
+  it("dropzone takes drops, keyboard, paste, and forwards taps to the picker", async () => {
+    dropFiles([fileNamed("d.jpg", "image/jpeg")]);
     await sleep(120);
     assert.equal(document.querySelectorAll("#photoGrid .ph").length, 1);
+    dropEmpty();
+    await sleep(120);
+    assert.equal(document.querySelectorAll("#photoGrid .ph").length, 1);
+    const input = document.getElementById("fileInput");
+    let picked = 0;
+    input.click = () => { picked += 1; };
+    document.getElementById("dropzone").click();
+    assert.equal(picked, 1);
+    const dz = document.getElementById("dropzone");
+    dz.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    dz.dispatchEvent(new window.KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    assert.equal(picked, 3);
+    dz.dispatchEvent(new window.KeyboardEvent("keydown", { key: "a", bubbles: true }));
+    assert.equal(picked, 3);
+    dz.dispatchEvent(new window.Event("dragover", { bubbles: true, cancelable: true }));
+    assert.equal(dz.classList.contains("over"), true);
+    dz.dispatchEvent(new window.Event("dragleave", { bubbles: true, cancelable: true }));
+    assert.equal(dz.classList.contains("over"), false);
+    pasteFiles([fileNamed("p.jpg", "image/jpeg")]);
+    await sleep(120);
+    assert.equal(document.querySelectorAll("#photoGrid .ph").length, 2);
+    pasteFiles(null);
+    await sleep(120);
+    assert.equal(document.querySelectorAll("#photoGrid .ph").length, 2);
   });
 });

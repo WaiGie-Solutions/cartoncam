@@ -309,8 +309,14 @@ function init() {
   $("suggestPqf").onclick = () => { $("pqfNo").value = suggestNextPqfNo(); $("filename").value = suggestFilename(readForm()); updateDerived(); };
   $("loadExample").onclick = () => { const keepType = state.reportType; writeForm({ ...EXAMPLE, reportType: keepType, filename: suggestFilename(EXAMPLE) }); };
   $("autoFilename").onclick = () => { $("filename").value = suggestFilename(readForm()); };
-  $("camInput").onchange = (e) => addFiles(e.target.files);
   $("fileInput").onchange = (e) => addFiles(e.target.files);
+  const dz = $("dropzone");
+  dz.addEventListener("click", () => $("fileInput").click());
+  dz.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("fileInput").click(); } });
+  ["dragenter", "dragover"].forEach((t) => dz.addEventListener(t, (e) => { e.preventDefault(); dz.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((t) => dz.addEventListener(t, (e) => { e.preventDefault(); dz.classList.remove("over"); }));
+  dz.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) void addFiles(e.dataTransfer.files); });
+  $("f").addEventListener("paste", (e) => { if (e.clipboardData?.files?.length) void addFiles(e.clipboardData.files); });
   $("downloadBtn").onclick = download;
   $("printBtn").onclick = () => window.print();
   $("saveRecent").onclick = async () => {

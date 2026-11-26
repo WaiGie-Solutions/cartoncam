@@ -19,6 +19,10 @@ input:focus, textarea:focus { outline:2px solid var(--blue); border-color:var(--
 .seg.active { background:var(--blue); color:#fff; border-color:var(--blue); }
 button { font-size:16px; }
 .btn, .primary, .secondary { display:inline-block; padding:13px 16px; border-radius:10px; border:1.5px solid var(--blue); font-weight:700; }
+.dropzone { display:flex; align-items:center; gap:12px; border:2px dashed var(--blue); border-radius:12px; padding:20px 16px; background:#eff6ff; cursor:pointer; font-size:16px; margin:8px 0; }
+.dropzone:focus { outline:2px solid var(--blue); outline-offset:2px; }
+.dropzone.over { background:#dbeafe; border-style:solid; }
+.dz-icon { font-size:28px; }
 .btn { background:var(--blue); color:#fff; cursor:pointer; }
 .btn.secondary, .secondary { background:#fff; color:var(--blue); }
 .primary { background:var(--blue); color:#fff; border-color:var(--blue); width:100%; padding:16px; font-size:18px; }
